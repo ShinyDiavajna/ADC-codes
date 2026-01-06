@@ -35,38 +35,36 @@ void loop() {
 
   sarValue = 0;
 
-  // SAR conversion: MSB → LSB
+  // -------- SAR conversion: MSB → LSB --------
   for (int bit = N_BITS - 1; bit >= 0; bit--) {
 
     // Try setting bit
     sarValue |= (1 << bit);
-    outputToDACs(sarValue);
-
+    writeSarDAC(sarValue);
+    
     delayMicroseconds(10);  // settling time
 
     // Comparator decision
-    // LOW  → Vin < Vdac → clear bit
-    // HIGH → Vin ≥ Vdac → keep bit
     if (digitalRead(compPin) == LOW) {
       sarValue &= ~(1 << bit);
-      outputToDACs(sarValue);
+      writeSarDAC(sarValue);
     }
   }
 
-  // sarValue now holds final ADC code
-  // reconstruction DAC continuously outputs this value
-  delay(100);
+  // -------- Reconstruction phase (CLEAN) --------
+  writeReconDAC(sarValue);   // update ONLY once
+  delay(100);                // hold final value
 }
 
-// ---------------- OUTPUT TO BOTH DACs ----------------
-void outputToDACs(byte value) {
-
-  // SAR DAC
+// ---------------- SAR DAC WRITE ----------------
+void writeSarDAC(byte value) {
   for (int i = 0; i < N_BITS; i++) {
     digitalWrite(sarDacPins[i], (value >> i) & 0x01);
   }
+}
 
-  // Reconstruction DAC
+// ---------------- RECON DAC WRITE ----------------
+void writeReconDAC(byte value) {
   for (int i = 0; i < N_BITS; i++) {
     digitalWrite(reconDacPins[i], (value >> i) & 0x01);
   }
